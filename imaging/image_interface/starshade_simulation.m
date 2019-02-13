@@ -11,7 +11,7 @@ function starshade_simulation( opt_in )
 % opt.contrast_planet is an array of contrast values for each planet
 % History:
 % 05/01/17: first version. Sergi Hildebrandt (JPL/Caltech)
-% 05/14/17: adapated to use opt. Sergi Hildebrandt (JPL/Caltech)
+% 05/14/17: adapted to use opt. Sergi Hildebrandt (JPL/Caltech)
 
 % get default values for the options
 opt = get_default_options( opt_in ) ;

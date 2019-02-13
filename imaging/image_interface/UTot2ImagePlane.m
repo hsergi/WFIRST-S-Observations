@@ -1,6 +1,6 @@
 % Function to translate the UTot field from makeStarshadeImage to the image plane
 
-function efDefectImg = UTot2ImagePlane(  lambdaIn, opt, pupil, telescopeDiameter, UTotL )
+function efDefectImg = UTot2ImagePlane(  lambdaIn, opt, pupil, telescopeDiameter, UTotL, mssg )
 
 tic
 units_image()
@@ -33,4 +33,8 @@ for ll = 1:length(lambdaIn)
     efDefectImg(:,:,ll) = imagePlane;
 end
 t = toc ;
-disp( sprintf( 'efDefectImg took %3.2f seconds', t ) )
+  if exist( 'mssg', 'var' )
+    if ( mssg )
+    disp( sprintf( 'efDefectImg took %3.2f seconds', t ) )
+    end
+  end

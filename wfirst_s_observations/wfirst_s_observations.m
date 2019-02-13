@@ -1016,8 +1016,8 @@ z_wfirst_s = 0 ; % #1
 d_str = 1000 / opt.target.pax( i_trgt ) * 3.0857e16 ; % 1 pc = 3.0857e16 m
 % Converting ra_obs, dec_obs to Ecliptic coordinates
 [ ecl_lon_obs, ecl_lat_obs ] = equat2eclip( ra_obs * pi / 180, dec_obs * pi / 180 ) ;
-% for orbital phase equal to 0, WFIRST-S aligned with the reference time that defines J2000: needs to give identity -> ( x_wfirst_s - d_ES )
-x_str_wfirst_s = d_str * cos( ecl_lat_obs ) * cos( ecl_lon_obs ) - ( x_wfirst_s - d_ES );
+% for orbital phase equal to 0, WFIRST-S aligned with the reference time that defines J2000
+x_str_wfirst_s = d_str * cos( ecl_lat_obs ) * cos( ecl_lon_obs ) - x_wfirst_s ;
 y_str_wfirst_s = d_str * cos( ecl_lat_obs ) * sin( ecl_lon_obs ) - y_wfirst_s ;
 z_str_wfirst_s = d_str * sin( ecl_lat_obs ) ;
 % Normalized position vector from WFIRST-S:

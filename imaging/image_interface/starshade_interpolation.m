@@ -75,7 +75,10 @@ opt = get_default_options( opt_in ) ;
     end
 
   end % Create the reference simulations
-
+dbstop if error
+disp( '(starshade_interpolation) Simulations created' ) ;
+%make_an_error
+return
 % 2) Analyze the results
 %% 2.1) Exploration (non-optimal in terms of speed and memory, but most accurate)
   if ( 1 ) && ~( opt.polar )
