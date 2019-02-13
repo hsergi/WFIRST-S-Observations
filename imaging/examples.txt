@@ -219,8 +219,9 @@ opt.imrotate = 'nearest' ;
 starshade_radial_interpolation( opt, i_rf ) ;
 
 opt.imrotate = 'bilinear' ;
+opt.plot = 2 ;  % Individual and summary plots
 starshade_radial_interpolation( opt, i_rf ) ;
-opt.plot = 2 ; % Individual and summary plots
+opt.plot = 1 ; % Only summary plots
 opt.imrotate = 'bicubic' ;
 starshade_radial_interpolation( opt, i_rf ) ;
 
@@ -241,7 +242,6 @@ starshade_radial_interpolation( opt, i_rf ) ;
 opt.imrotate = 'bicubic' ;
 starshade_radial_interpolation( opt, i_rf ) ;
 end
-exit
 
 % D) Translation
 
@@ -335,4 +335,231 @@ dlt_alph = 90 / 14 ;
 % Series of angles considered:
 alph_lst = [ 0, 1 , 2, 3, 4, 5, 6, 7, 8, 14 ] * dlt_alph ;
 plot_starshade( alph_lst ) ;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Creating a basis of PSF (fastest way, but many small jobs)
+
+% This would create all PSF needed to cover a full petal (PS: it calls starshade_one)
+for i = -17 : 17, make_wfst_wavelength_basis( i, 1, some_lambda_nm_1, some_lambda_nm_2, some_delta_lambda ) ; end
+
+i_1=0;i_2=0;%17
+for i = i_1 : i_2, make_wfst_wavelength_basis( i, 1, 747, 970, 3 ) ; end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Analysis of the wavelength dependence
+
+%% First, process the PSFs:
+i_1=0;i_2=0;%17
+make_wfst_wavelength( i_1:i_2, 0:150, 425, 525, 3 )
+
+i_1=0;i_2=0;%17
+make_wfst_wavelength( i_1:i_2, 0:350, 747, 970, 3 )
+
+%% Second, collect results:
+i_1=0;i_2=0;%17
+starshade_wavelength( i_1:i_2, 0 : 150, 425, 525, 3, 0, 1 )
+
+i_1=0;i_2=0;%17
+starshade_wavelength( i_1:i_2, 0 : 350, 747, 970, 3, 0, 1 ) 
+
+%% Third, plot:
+i_1=0;i_2=0;%17
+starshade_wavelength( i_1:i_2, 0 : 150, 425, 525, 3 )
+
+i_1=0;i_2=0;%17
+starshade_wavelength( i_1:i_2, 0 : 350, 747, 970, 3 )
+
+babysitjobs(['comb/*w_rlz*.mat'],'wait10',0,0)
+i_1=0;i_2=0;%17
+make_wfst_wavelength( i_1:i_2, 0:350, 747, 970, 3 )
+i_1=0;i_2=0;%17
+starshade_wavelength( i_1:i_2, 0:350, 747, 970, 3, 0, 1 )
+i_1=0;i_2=0;%17
+starshade_wavelength( i_1:i_2, 0:350, 747, 970, 3 )
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Analysis of the radial PSF spacing (also includes the determination of the non-stationary/stationary region)
+% see starshade_radial_psf
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Rotation of electric fields (tests with translations of electric field and
+% of image field not totally clear yet)
+
+% Change opt.erase_hot_pixels = 1, 2, 3 (notice the edge hot pixel -> not relevant bc of the pupil) --> timing of this process on the fly (stored)
+% and it's 0.5%-1% of maximum difference wrt peak (< IWA)
+
+% 40 mas distance
+check_rotation( 9, 39 ) % Notice how the scale of the plot is +/- peak
+
+% 150 mas distance
+check_rotation( 33, 146 ) % Notice how the scale of the plot is +/- peak
+
+% Non-multiples of pi/14:
+
+check_rotation( round(50*cos(3*pi/14)), round(50*sin(3*pi/14)) )
+check_rotation( round(50*cos(5*pi/14)), round(50*sin(5*pi/14)) )
+check_rotation( round(50*cos(pi/4)), round(50*sin(pi/4)) )
+
+% Other examples: then, we need basis for petal + (creation of PSF on the image plane ~ 1s + rotation (fast) versus ~0.1-0.2s I/O 1 mas)
+
+check_rotation( round(40/sqrt(2)), round(40/sqrt(2)) )
+
+check_rotation( round(50/sqrt(2)), round(50/sqrt(2)) )
+
+check_rotation( round(150*cos(3*pi/14)), round(150*sin(3*pi/14)) )
+check_rotation( round(150*cos(3*pi/14)), round(150*sin(3*pi/14)) )
+
+% Spinning StarShade:
+for i= [ 10, 11, 12 ], make_reference( i ) ; end
+babysitjobs( sprintf( 'comb/*r1*_rlz*.mat' ), 'wait10', 0, 0 )
+
+
+b=265;a=20;l1=747;l2=970;l=180; load( sprintf( '/n/bicepfs1/bicep2/pipeline/maps/1000/wfst/out_dev/spinning/starshade_spinning_psf_%04d_%04d_0010_nm_px_res_1_mas_r_%03i_mas.mat', l1, l2, b ) ) ;src=squeeze( starshade_spinning_psf( 1000+b-l:1000+b+l,1000-l:1000+l,a) ); imagesc( src ) ; colorbar ; grid
+
+b=15;a=1;l1=425;l2=552;l=180; load( sprintf( '/n/bicepfs1/bicep2/pipeline/maps/1000/wfst/out_dev/spinning/starshade_spinning_psf_%04d_%04d_0010_nm_px_res_1_mas_r_%03i_mas.mat', l1, l2, b ) ) ;src=squeeze( starshade_spinning_psf( 1000+b-l:1000+b+l,1000-l:1000+l,a) ); imagesc( src ) ; colorbar ; grid ; title( [ 'WFIRST-S PSF at ' num2str( l1 + ( a - 1 ) * 10 ) ' nm at ' num2str( b ) ' mas from the center' ], 'FontSize', 14 )
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Check NI2 perturbations
+
+check_NI2( 'NI2quadlocus' )
+check_NI2( 'NI2seglocus', 200, 552, 552 ) ;
+
+%%%%%%%%%%%%%%%%%%%%%
+%                   %
+%     IMAGING       %
+%                   %
+%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Obsolete: Now, the imaging tool takes care directly of any I/O task
+% Preparing the Haystacks data for imaging (also notice that there are other
+% options: without background addition, or with planets removed.
+
+clear ; opt.background_image = '' ; opt.lmbd_arry_nm = [ 299, 300:100:1000, 1002 ] ; prepare_haystacks_scenes( opt ) ;
+clear ; opt.background_image = '' ; opt.remove_planets = 1 ; opt.lmbd_arry_nm = [ 299, 300:100:1000, 1002 ] ; prepare_haystacks_scenes( opt ) ;
+clear ; opt.background_image = '' ; prepare_haystacks_scenes( opt ) ;
+clear ; opt.background_image = '' ; opt.remove_planets = 1 ; prepare_haystacks_scenes( opt ) ;
+% Adding by default background:
+clear ; opt.lmbd_arry_nm = [ 299, 300:100:1000, 1002 ] ; prepare_haystacks_scenes( opt ) ;
+clear ; opt.remove_planets = 1 ; opt.lmbd_arry_nm = [ 299, 300:100:1000, 1002 ] ; prepare_haystacks_scenes( opt ) ;
+prepare_haystacks_scenes ;
+clear ; opt.remove_planets = 1 ; prepare_haystacks_scenes( opt ) ;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Checking the planets are properly removed
+clear
+dr_fl = '/n/bicepfs1/bicep2/pipeline/maps/1000/wfst/in/' ;
+fl_chck = { 'modern_cube_zodi1inc0dist10_noplanets_array_band_0299_1002nm_pix_3mas.mat', ...
+            'modern_cube_zodi1inc60dist10_noplanets_array_band_0299_1002nm_pix_3mas.mat' } ;
+
+n_fl = numel( fl_chck ) ;
+  for i_fl = 1 : n_fl
+  load( [ dr_fl fl_chck{ i_fl } ] )
+    if findstr( 'inc0', fl_chck{ i_fl } )
+    load( [ dr_fl 'modern_cube_zodi1inc0dist10_planet_positions.mat' ] ) ;
+    else
+    load( [ dr_fl 'modern_cube_zodi1inc60dist10_planet_positions.mat' ] ) ;
+    end
+  a = planet_pos_pix_1 ;
+  b = planet_pos_pix_2 ;
+  n_scn = size( scene_array, 1 ) ;
+    for i_scn = 2 : n_scn
+    scn_tmp = squeeze( scene_array( i_scn, :, : ) ) ;
+    clf
+    n_plnt = 7 ;
+      for i_plnt = 1 : n_plnt
+      scn_tmp_plt = scn_tmp( a( i_plnt ) - 4 : a( i_plnt ) + 4, b( i_plnt ) - 4 : b( i_plnt ) + 4 ) ;
+      subplot( 1, n_plnt, i_plnt )
+      [ mn mx ] = log10_mnmx( scn_tmp_plt ) ;
+      imagesc( log10( scn_tmp_plt ), [ mn mx ] ) ;
+      end
+    title( num2str( i_scn ) )
+pause( 6 )
+    end
+  end
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Example of imaging some scenes
+clear ; opt.scene_name = 'modern_cube_zodi1inc0dist10_noplanets_array_band_0299_1002nm_pix_3mas.mat' ; opt.save_output_arrays = 1 ; starshade_imaging( opt ) ;
+
+
+clear
+lst_scn = { 'modern_cube_zodi1inc0dist10_array_band_0299_1002nm_pix_3mas.mat',... 
+'modern_cube_zodi1inc0dist10_noplanets_array_band_0299_1002nm_pix_3mas.mat', ...
+'modern_cube_zodi1inc60dist10_array_band_0299_1002nm_pix_3mas.mat', ...
+'modern_cube_zodi1inc60dist10_noplanets_array_band_0299_1002nm_pix_3mas.mat' } ;
+
+n_lst = numel( lst_scn ) ;
+  for i_lst = 1 : n_lst
+  opt.scene_name = lst_scn{ i_lst } ;
+  opt.occulter_name = 'NW2' ;
+  opt.save_output_arrays = 1 ; starshade_imaging( opt ) ;
+  end
+
+
+% Some plots
+clear
+clf
+lst_plt = { 'starshade_spinning_modern_cube_zodi1inc0dist10_GALAXIES_10lat_starshade_array_band_0299_1002nm_pix_3mas.mat_iwa_72.00_mas_pix_3_mas_499p449_nm.mat', ...
+            'starshade_spinning_modern_cube_zodi1inc0dist10_GALAXIES_10lat_starshade_noplanets_array_band_0299_1002nm_pix_3mas.mat_iwa_72.00_mas_pix_3_mas_499p449_nm.mat', ...
+            'starshade_spinning_modern_cube_zodi1inc0dist10_starshade_noplanets_array_band_0299_1002nm_pix_3mas.mat_iwa_72.00_mas_pix_3_mas_499p449_nm.mat' }
+n_lst = numel( lst_plt ) ;
+ttl_plt = { 'Spinning Starshade Solar System at 10 pc + Galaxies (500 nm)', ...
+            'Spinning Starshade Solar System at 10 pc - Planets + Galaxies (500 nm)', ...
+            'Spinning Starshade Solar System at 10 pc - Planets - Galaxies (500 nm)'  } ;
+n_ttl = numel( ttl_plt ) ;
+  if n_ttl ~= n_lst
+  disp( 'Different number of files and corresponding titles. Stopped.' )
+  make_an_error
+  end
+opt.output_dir = '/n/bicepfs1/bicep2/pipeline/maps/1000/wfst/out_dev/out_img/' ;
+  for i_lst = 1 : n_lst
+  load ( [ opt.output_dir lst_plt{ i_lst } ] )
+  sz = size( scn_dt_cnv, 1 ) ;
+  cntr = ( sz + 1 ) / 2 ;
+  l = 55 ;
+  px_mas = 18.6 ;
+  ax_arry = ( -l : l ) * px_mas ;
+%  subplot(121)
+  imagesc( ax_arry, ax_arry, scn_dt_cnv( cntr - l : cntr + l, cntr - l : cntr + l ) ) 
+  title( ttl_plt{ i_lst } )
+  xlabel( 'mas', 'FontSize', 14 )
+  ylabel( 'mas', 'FontSize', 14 )
+%  subplot(122)
+%  imagesc( ax_arry, ax_arry, log10( scn_dt_cnv( 2 * l : 4 * l, sz - 4 * l : sz - 2 * l ) ) )
+%  title( 'Top, right corner' )
+%  xlabel( 'mas', 'FontSize', 14 )
+%  ylabel( 'mas', 'FontSize', 14 )
+pause( 10 )
+  end
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Generating a PSF basis for a spinning Starshade
+
+Example: Habex, 450-550 nm with steps of 10 nm
+
+1) Make sure get_r_stationary has a wavelength case that corresponds to the occulter geometry (NI2, NW2)
+
+2) Make sure there is a case in make_reference that is associated with the run and its parameters
+
+3) Create the PSF basis (Electric fields at the pupil)
+
+make_reference( 15 )
+
+* The step before will create the electric fields at the pupil. Next, we create the PSF basis on the image plane
+** Include the wavelength range in create_imaging_basis
+** Include the pixel size according to the scene
+
+4) clear ; opt.dlt_lmbd_nm = 10 ; opt.px_out_mas = 13 ; opt.occulter_name = 'NW2' ; create_imaging_basis( opt ) 
+
+* Next step could be an observation of some scene
+
+5) clear ; opt.occulter_name = 'NW2' ; opt.cluster = 0 ; opt.band_1 = 1 ; starshade_imaging( opt ) ;
 

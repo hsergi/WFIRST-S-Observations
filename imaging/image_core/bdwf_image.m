@@ -65,6 +65,7 @@ ym = (yVals(2:end) + yVals(1:end-1))/2;
 
 xl = xVals(2:end) - xVals(1:end-1);
 yl = yVals(2:end) - yVals(1:end-1);
+
 % Do edge integral
 if flagZ
     % Out-of-plane errors present
@@ -201,7 +202,7 @@ tic
             end
         end
 toc
-%dbstop if error
+dbstop if error
 %make_an_error
         
         for qq = 1:nLambda
@@ -211,4 +212,4 @@ toc
         end
     end
 end
-
+%make_an_error

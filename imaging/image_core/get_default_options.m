@@ -13,14 +13,29 @@ function opt = get_default_options( opt )
   opt.redo = 0 ;
   end
 
+% Occulter path
+  if ~isfield( opt, 'path_occulter' )
+  opt.path_occulter = './' ;
+  end
+
 % Occulter Name
   if ~isfield( opt, 'occulter_name' )
   opt.occulter_name = 'NI2' ;
   end
 
+% Number of petals
+  if ~isfield( opt, 'n_ptl' )
+  opt.n_ptl = 24 ; % Default number (S. Shaklan email "NI2 24 petals files" 05/03/18)
+  end
+
 % Size of the pupil data in pixels (square)
   if ~isfield( opt, 'Nx_pupil_pix' )
   opt.Nx_pupil_pix = 64 ;
+  end
+
+% Size of the secondary if a circular obscuration is fine (no struts). See makeStarshadeImage.m
+  if ~isfield( opt, 'secondary_size' )
+  opt.secondary_size = 0 ;
   end
 
 % Number of pixels across image plane
@@ -34,12 +49,22 @@ function opt = get_default_options( opt )
   if ~isfield( opt, 'diam_image_mas' )
   opt.diam_img_mas = 2000 ;
   else
-  opt,diam_img_mas = opt.diam_image_mas ;
+  opt.diam_img_mas = opt.diam_image_mas ;
+  end
+
+% Initial wavelength to consider
+  if ~isfield( opt, 'lambda_1_nm' )
+  opt.lambda_1_nm = 425 ; 
+  end
+
+% Final wavelength to consider
+  if ~isfield( opt, 'lambda_2_nm' )
+  opt.lambda_2_nm = 525 ;
   end
 
 % Step of wavelength to consider
   if ~isfield( opt, 'delta_lambda_nm' )
-  opt.delta_lambda_nm = 50 ; % nm
+  opt.delta_lambda_nm = 10 ; % nm
   end
 
 % X/Y positions on the focal plane (instead of r_source_mas and psi_source_deg)
@@ -121,14 +146,14 @@ rplc_fl_nm = 0 ;
 opt.x_source_mas = opt.r_source_mas * cos( opt.psi_source_deg * pi / 180 ) ;
 opt.y_source_mas = opt.r_source_mas * sin( opt.psi_source_deg * pi / 180 ) ;
 
-% Replace by a file in FITS format with an Nx x Nx array if you want a specific pupil
-  if ~isfield( opt, 'pupil_file' )
-  opt.pupil_file = './in/pupil_D1Kpix_2048.fits' ;
+% Hot pixels in the electric fields (by default, do not erase them)
+  if ~isfield( opt, 'erase_hot_pixels' )
+  opt.erase_hot_pixels = 0 ;
   end
 
-% For plotting.
-  if ~isfield( opt, 'plot' )
-  opt.plot = 0 ;
+% Replace by a file in FITS format with an Nx x Nx array if you want a specific pupil
+  if ~isfield( opt, 'pupil_file' )
+  opt.pupil_file = [ opt.path_occulter 'pupil_D1Kpix_2048.fits' ] ;
   end
 
 % NB: Name of the filename to store the results at the end of the code
@@ -154,7 +179,7 @@ opt.y_source_mas = opt.r_source_mas * sin( opt.psi_source_deg * pi / 180 ) ;
 
 % paths to save the results
   if ~isfield( opt, 'save_path' )
-  opt.save_path = './out/' ;
+  opt.save_path = './out' ;
     if ( opt.developer )
     opt.save_path = './out_dev/' ;
     end
@@ -162,7 +187,7 @@ opt.y_source_mas = opt.r_source_mas * sin( opt.psi_source_deg * pi / 180 ) ;
 
 % Saving the figures
   if ~isfield( opt, 'save_path_fig' )
-  opt.save_path_fig = './fig/' ;
+  opt.save_path_fig = './fig' ;
     if ( opt.developer )
     opt.save_path_fig = './fig_dev/' ;
     end
@@ -216,12 +241,6 @@ opt.y_source_mas = opt.r_source_mas * sin( opt.psi_source_deg * pi / 180 ) ;
   if ~isfield( opt, 'step_mas' )
   opt.step_mas = 5 ;
   end
-
-  % For the rotations with imrotate
-  if ~isfield( opt, 'imrotate' )
-  opt.imrotate = 'nearest' ;
-  end
-
  
 % For the simulation work
 
@@ -234,12 +253,26 @@ opt.y_source_mas = opt.r_source_mas * sin( opt.psi_source_deg * pi / 180 ) ;
   opt.input_image.exozodi = 1 ;
   end
 
-%%%%%%%%% Filename where to store the resutls %%%%%%%
+% Rotating Starshade
+  if ~isfield( opt, 'starshade_rotation_rad' )
+  opt.starshade_rotation_rad = 0 ;
+  end
+
+%%%%%%%%% Filename where to store the results %%%%%%%
   if ~isfield( opt, 'save_filename' ) || ( rplc_fl_nm )
-  opt.save_filename = sprintf( 'starshade_UtotL_Nx_%i_pix_dl_%inm_dr_%3.1f_mas_psi_%3.1f_deg', ...
-  opt.Nx_pupil_pix, opt.delta_lambda_nm, opt.r_source_mas, opt.psi_source_deg ) ;
+  opt.save_filename = sprintf( 'starshade_UtotL_Nx_%i_pix_%04i_%04i_dl_%inm_dr_%3.1f_mas_psi_%3.1f_deg', ...
+  opt.Nx_pupil_pix, opt.lambda_1_nm, opt.lambda_2_nm, opt.delta_lambda_nm, opt.r_source_mas, opt.psi_source_deg ) ;
     if strcmp( opt.pupil_file, '0' ) == 1, opt.save_filename = sprintf( '%s_ideal', opt.save_filename ) ; end
     if opt.diam_img_mas ~= 2000, opt.save_filename = sprintf( '%s_diam_%04i', opt.save_filename, opt.diam_img_mas ) ; end
+  % Rotating Starshade
+    if ( opt.starshade_rotation_rad ~= 0 )
+    str_alph = strrep( sprintf( '%1.4f', opt.starshade_rotation_rad ), '.', 'p' ) ;
+    opt.save_filename = sprintf( '%s_alpha_%s', opt.save_filename, str_alph ) ; 
+    end
+  % Different occulter file than NI2
+    if ~strcmp( opt.occulter_name, 'NI2' )
+    opt.save_filename = sprintf( '%s_%s', opt.save_filename, opt.occulter_name ) ;
+    end
 % Not used for now.
 %  if opt.Nx_img ~= 400, opt.save_filename = sprintf( '%s_Nx_img_%04i', opt.save_filename, opt.Nx_img ) ; end
   end

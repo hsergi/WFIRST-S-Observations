@@ -21,7 +21,7 @@ function [Xout, Yout, imagePlane] = mft_image(imagePlaneDiameterInLambdaOverD,..
 % Take to image plane
 [Xout Yout] = meshgrid(xpp, ypp);
 imagePlane = exp(-2*pi*1i*xpp.'*x)*(inputField)*exp(-2*pi*1i*y.'*ypp)*dx*dy;
-
+make_an_error
 function [x, dx] = interval(width, N)
 dx = width/N;
 x = -width/2 + dx/2:dx:width/2-dx/2;
